@@ -32,6 +32,8 @@ public @interface Repeat {
     @AliasFor("scope")
     long value() default 300;
 
+    boolean useLastResponse() default false;
+
     /**
      * 返回指定异常
      *

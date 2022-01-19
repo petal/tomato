@@ -79,7 +79,7 @@ public class TomatoV2Interceptor {
             } else {
                 idempotent(responseLockToken, response, repeat.value(), repeat);
                 //防重之后交给用户来处理
-                Object proceed = interceptSupport.proceed(method, args, response);
+                Object proceed = interceptSupport.proceed(method, args, response, repeat.useLastResponse());
                 if (proceed == null) {
                     Class<? extends Exception> throwable = repeat.throwable();
                     Constructor<? extends Exception> declaredConstructor = throwable.getDeclaredConstructor(String.class);
