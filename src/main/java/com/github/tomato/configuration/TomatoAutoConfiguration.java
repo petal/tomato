@@ -26,7 +26,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class TomatoAutoConfiguration {
 
     @Bean
-    @ConditionalOnBean(Idempotent.class)
     public TomatoStartListener listener() {
         return new TomatoStartListener();
     }
@@ -38,7 +37,6 @@ public class TomatoAutoConfiguration {
      * @return Idempotent
      */
     @Bean
-    @ConditionalOnBean(StringRedisTemplate.class)
     public Idempotent idempotent(StringRedisTemplate redisTemplate) {
         return new RedisIdempotentTemplate(redisTemplate);
     }
@@ -87,7 +85,6 @@ public class TomatoAutoConfiguration {
      * @return TomatoV2Interceptor
      */
     @Bean
-    @ConditionalOnBean(Idempotent.class)
     public TomatoV2Interceptor tomatoInterceptor(Idempotent idempotent, TokenProviderSupport tokenProviderSupport, RepeatToInterceptSupport repeatToInterceptSupport) {
         return new TomatoV2Interceptor(idempotent, tokenProviderSupport, repeatToInterceptSupport);
     }
