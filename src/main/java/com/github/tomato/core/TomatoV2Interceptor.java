@@ -65,8 +65,7 @@ public class TomatoV2Interceptor {
                 throw new ElSyntaxException("el语法错误:[" + Arrays.asList(args) + "]");
             }
             //3. 唯一键键不存在,直接执行
-            if (idempotent(methodLockTomatoToken(method, tomatoToken), repeat.methodLock(), repeat)
-                    && idempotent(tomatoToken, repeat.scope(), repeat)) {
+            if (idempotent(methodLockTomatoToken(method, tomatoToken), repeat.value(), repeat)) {
                 StaticContext.setToken(tomatoToken);
                 result = pjp.proceed();
             } else {
@@ -88,10 +87,6 @@ public class TomatoV2Interceptor {
             throw new RuntimeException(throwable);
         } finally {
             StaticContext.clear();
-            if (!StringUtils.isEmpty(tomatoToken)) {
-                // 移除本次方法锁
-                idempotent.delIdempotent(methodLockTomatoToken(method, tomatoToken));
-            }
         }
         return result;
     }
