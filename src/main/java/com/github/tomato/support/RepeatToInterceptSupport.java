@@ -15,5 +15,5 @@ public interface RepeatToInterceptSupport {
      * @param args   方法入参
      * @return Object 务必保证与Method签名一样的返回值类型
      */
-    Object proceed(Method method, Object[] args);
+    Object proceed(Method method, Object[] args, String oldResponse);
 }

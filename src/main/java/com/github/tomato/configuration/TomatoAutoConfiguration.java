@@ -1,12 +1,14 @@
 package com.github.tomato.configuration;
 
-import com.github.tomato.core.*;
+import com.github.tomato.core.Idempotent;
+import com.github.tomato.core.RedisIdempotentTemplate;
+import com.github.tomato.core.TomatoStartListener;
+import com.github.tomato.core.TomatoV2Interceptor;
 import com.github.tomato.support.DefaultRepeatToInterceptSupport;
 import com.github.tomato.support.DefaultTokenProviderSupport;
 import com.github.tomato.support.RepeatToInterceptSupport;
 import com.github.tomato.support.TokenProviderSupport;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
@@ -39,19 +41,6 @@ public class TomatoAutoConfiguration {
     @Bean
     public Idempotent idempotent(StringRedisTemplate redisTemplate) {
         return new RedisIdempotentTemplate(redisTemplate);
-    }
-
-    /**
-     * 如果项目中不具备Redis的能力,会注册一个基于本地缓存的拦截能力。
-     * 注意这个能力是不具备分布式的能力。切当请求量很大的情况下会导致内存占用过大。
-     * 当内存占用过大会自动的释放内存,最终导致拦截失效
-     *
-     * @return Idempotent
-     */
-    @Bean
-    @ConditionalOnMissingBean(StringRedisTemplate.class)
-    public Idempotent idempotent() {
-        return new LocalCacheIdempotentTemplate();
     }
 
     /**

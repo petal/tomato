@@ -15,8 +15,9 @@ public interface Idempotent {
      * @param millisecond 控制时间
      * @return Boolean
      */
-    boolean idempotent(String uniqueCode, Long millisecond);
+    boolean idempotent(String uniqueCode, String value, Long millisecond);
 
+    String getIdempotent(String uniqueCode);
 
     /**
      * 删除幂等键
@@ -35,7 +36,7 @@ public interface Idempotent {
      * @param <E>               异常泛型
      * @throws E 泛型
      */
-    <E extends Throwable> void idempotent(String uniqueCode, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E;
+    <E extends Throwable> void idempotent(String uniqueCode, String value, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E;
 
 
     /**
@@ -45,7 +46,7 @@ public interface Idempotent {
      * @param millisecond 控制时间
      * @return Boolean
      */
-    boolean fixedIdempotent(String uniqueCode, Long millisecond);
+    boolean fixedIdempotent(String uniqueCode, String value, Long millisecond);
 
     /**
      * 固定窗口
@@ -56,5 +57,5 @@ public interface Idempotent {
      * @param <E>               异常泛型
      * @throws E 泛型
      */
-    <E extends Throwable> void fixedIdempotent(String uniqueCode, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E;
+    <E extends Throwable> void fixedIdempotent(String uniqueCode, String value, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E;
 }

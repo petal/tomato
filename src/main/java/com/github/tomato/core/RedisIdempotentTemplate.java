@@ -32,14 +32,19 @@ public class RedisIdempotentTemplate extends AbstractIdempotent {
     /**
      * 新增key并设置过期时间
      *
-     * @param uniqueCode  幂等键
+     * @param uniqueToken 幂等键
      * @param millisecond 毫秒
      * @return boolean
      */
     @Override
-    public boolean doIdempotent(String uniqueCode, Long millisecond) {
-        Boolean setIfAbsent = redisTemplate.opsForValue().setIfAbsent(uniqueCode, TomatoConstant.DEFAULT_VALUE, millisecond, TimeUnit.MILLISECONDS);
+    protected boolean doAddIdempotent(String uniqueToken, String value, Long millisecond) {
+        Boolean setIfAbsent = redisTemplate.opsForValue().setIfAbsent(uniqueToken, value, millisecond, TimeUnit.MILLISECONDS);
         return setIfAbsent != null ? setIfAbsent : false;
+    }
+
+    @Override
+    protected String doGetIdempotent(String uniqueToken) {
+        return redisTemplate.opsForValue().get(uniqueToken);
     }
 
     /**

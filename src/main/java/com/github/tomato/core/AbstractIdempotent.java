@@ -1,5 +1,6 @@
 package com.github.tomato.core;
 
+import com.github.tomato.constant.TomatoConstant;
 import com.github.tomato.util.Md5Tools;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,10 +25,10 @@ public abstract class AbstractIdempotent implements Idempotent {
      * @return boolean
      */
     @Override
-    public boolean idempotent(String uniqueCode, Long millisecond) {
+    public boolean idempotent(String uniqueCode, String value, Long millisecond) {
         String uniqueToken = isolationAlgorithmToken(uniqueCode);
         log.debug("Idempotent: key[" + uniqueToken + "],expire:[" + millisecond + "ms]");
-        boolean idempotent = doIdempotent(uniqueToken, millisecond);
+        boolean idempotent = doAddIdempotent(uniqueToken, value, millisecond);
         if (!idempotent) {
             //重复请求后,都会增加占用时间,以此来保证滑动窗口。只有当安全时间内没有请求,才会释放防重空间
             //图例说明
@@ -37,6 +38,11 @@ public abstract class AbstractIdempotent implements Idempotent {
         return idempotent;
     }
 
+    @Override
+    public String getIdempotent(String uniqueCode) {
+        String uniqueToken = isolationAlgorithmToken(uniqueCode);
+        return doGetIdempotent(uniqueToken);
+    }
 
     /**
      * 删除幂等键
@@ -59,8 +65,8 @@ public abstract class AbstractIdempotent implements Idempotent {
      * @param exceptionSupplier 指定要抛的异常
      */
     @Override
-    public <E extends Throwable> void idempotent(String uniqueCode, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E {
-        if (!idempotent(uniqueCode, millisecond)) {
+    public <E extends Throwable> void idempotent(String uniqueCode, String value, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E {
+        if (!idempotent(uniqueCode, value, millisecond)) {
             throw exceptionSupplier.get();
         }
     }
@@ -74,10 +80,10 @@ public abstract class AbstractIdempotent implements Idempotent {
      * @return boolean
      */
     @Override
-    public boolean fixedIdempotent(String uniqueCode, Long millisecond) {
+    public boolean fixedIdempotent(String uniqueCode, String value, Long millisecond) {
         String uniqueToken = isolationAlgorithmToken(uniqueCode);
         log.debug("Idempotent: key[" + uniqueToken + "],expire:[" + millisecond + "ms]");
-        return doIdempotent(uniqueToken, millisecond);
+        return doAddIdempotent(uniqueToken, value, millisecond);
     }
 
     /**
@@ -88,8 +94,8 @@ public abstract class AbstractIdempotent implements Idempotent {
      * @param exceptionSupplier 指定要抛的异常
      */
     @Override
-    public <E extends Throwable> void fixedIdempotent(String uniqueCode, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E {
-        if (!fixedIdempotent(uniqueCode, millisecond)) {
+    public <E extends Throwable> void fixedIdempotent(String uniqueCode, String value, Long millisecond, Supplier<? extends E> exceptionSupplier) throws E {
+        if (!fixedIdempotent(uniqueCode, value, millisecond)) {
             throw exceptionSupplier.get();
         }
     }
@@ -121,7 +127,9 @@ public abstract class AbstractIdempotent implements Idempotent {
      * @param millisecond 毫秒
      * @return boolean
      */
-    public abstract boolean doIdempotent(String uniqueToken, Long millisecond);
+    protected abstract boolean doAddIdempotent(String uniqueToken, String value, Long millisecond);
+
+    protected abstract String doGetIdempotent(String uniqueToken);
 
     /**
      * 过期key

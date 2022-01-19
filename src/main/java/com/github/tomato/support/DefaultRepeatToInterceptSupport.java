@@ -19,7 +19,7 @@ public class DefaultRepeatToInterceptSupport implements RepeatToInterceptSupport
      * @return Object
      */
     @Override
-    public Object proceed(Method method, Object[] args) {
+    public Object proceed(Method method, Object[] args, String oldResponse) {
         return null;
     }
 }

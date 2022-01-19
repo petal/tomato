@@ -1,11 +1,14 @@
 package com.github.tomato.core;
 
 import com.github.tomato.annotation.Repeat;
+import com.github.tomato.constant.TomatoConstant;
 import com.github.tomato.exception.ElSyntaxException;
 import com.github.tomato.exception.RepeatOptException;
+import com.github.tomato.support.CachedClassResponseData;
 import com.github.tomato.support.RepeatToInterceptSupport;
 import com.github.tomato.support.TokenProviderSupport;
 import com.github.tomato.util.StaticContext;
+import com.google.gson.Gson;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
@@ -18,7 +21,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 拦截器拦截被幂等的接口
@@ -28,6 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Aspect
 public class TomatoV2Interceptor {
+    private Gson mGson = new Gson();
 
     private Idempotent idempotent;
 
@@ -65,12 +68,18 @@ public class TomatoV2Interceptor {
                 throw new ElSyntaxException("el语法错误:[" + Arrays.asList(args) + "]");
             }
             //3. 唯一键键不存在,直接执行
-            if (idempotent(methodLockTomatoToken(method, tomatoToken), repeat.value(), repeat)) {
+            String methodLockToken = methodLockTomatoToken(method, tomatoToken);
+            String responseLockToken = "TMT_" + methodLockToken + "_response";
+            String response = idempotent.getIdempotent(responseLockToken);
+            if (idempotent(methodLockToken, TomatoConstant.DEFAULT_VALUE, repeat.methodLock(), repeat) && response == null) {
                 StaticContext.setToken(tomatoToken);
                 result = pjp.proceed();
+                CachedClassResponseData cachedClassResponseData = new CachedClassResponseData(result.getClass().getName(), mGson.toJson(result));
+                idempotent(responseLockToken, mGson.toJson(cachedClassResponseData), repeat.value(), repeat);
             } else {
+                idempotent(responseLockToken, response, repeat.value(), repeat);
                 //防重之后交给用户来处理
-                Object proceed = interceptSupport.proceed(method, args);
+                Object proceed = interceptSupport.proceed(method, args, response);
                 if (proceed == null) {
                     Class<? extends Exception> throwable = repeat.throwable();
                     Constructor<? extends Exception> declaredConstructor = throwable.getDeclaredConstructor(String.class);
@@ -87,18 +96,22 @@ public class TomatoV2Interceptor {
             throw new RuntimeException(throwable);
         } finally {
             StaticContext.clear();
+            if (!StringUtils.isEmpty(tomatoToken)) {
+                // 移除本次方法锁
+                idempotent.delIdempotent(methodLockTomatoToken(method, tomatoToken));
+            }
         }
         return result;
     }
 
-    public boolean idempotent(String tomatoToken, Long millisecond, Repeat repeat) {
+    public boolean idempotent(String tomatoToken, String value, Long millisecond, Repeat repeat) {
         RepeatTypeEnum typeEnum = repeat.type();
         if (RepeatTypeEnum.FIXED_WINDOW == typeEnum) {
-            return idempotent.fixedIdempotent(tomatoToken, millisecond);
+            return idempotent.fixedIdempotent(tomatoToken, value, millisecond);
         } else if (RepeatTypeEnum.SLIDING_WINDOW == typeEnum) {
-            return idempotent.idempotent(tomatoToken, millisecond);
+            return idempotent.idempotent(tomatoToken, value, millisecond);
         }
-        return idempotent.idempotent(tomatoToken, millisecond);
+        return idempotent.idempotent(tomatoToken, value, millisecond);
     }
 
     private Method findMethod(Signature signature) {
