@@ -38,6 +38,9 @@ public class RedisIdempotentTemplate extends AbstractIdempotent {
      */
     @Override
     protected boolean doAddIdempotent(String uniqueToken, String value, Long millisecond) {
+        if (value == null) {
+            return redisTemplate.hasKey(uniqueToken);
+        }
         Boolean setIfAbsent = redisTemplate.opsForValue().setIfAbsent(uniqueToken, value, millisecond, TimeUnit.MILLISECONDS);
         return setIfAbsent != null ? setIfAbsent : false;
     }
